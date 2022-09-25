@@ -117,6 +117,7 @@ def main(video_path: str, json_path: str, title: str) -> NoReturn:
                 if detected_class == 'person': 
                     x, y, w, h = current_frame_json.get("bounding boxes")[index]
                     detections.append([x, y, w, h])
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
             
     finally:
         video_capture.release()
@@ -125,5 +126,5 @@ def main(video_path: str, json_path: str, title: str) -> NoReturn:
 
 if __name__ == "__main__":
     VIDEO_PATH = "resources/video_1.mp4"
-    JSON_PATH = "resources/video_2_detections.json"
+    JSON_PATH = "resources/video_1_detections.json"
     main(VIDEO_PATH, JSON_PATH, "My Video")
