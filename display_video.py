@@ -1,8 +1,8 @@
 from math import floor
 from typing import NoReturn
-
 import cv2
 import json
+from tracker import *
 
 
 def open_video(path: str) -> cv2.VideoCapture:
@@ -109,15 +109,26 @@ def main(video_path: str, json_path: str, title: str) -> NoReturn:
             success, frame = video_capture.read()
             
             current_frame_json = json_data.get(str(current_frame))
+            # 1. object detection
+            detections = []
             # iterates through the list of bounding boxes for the current frame & draw a bounding box for each
-            
-            detections = [] # change name to pedestrians
-            # for bounding_box in current_frame_json.get("bounding boxes"):
             for index, detected_class in enumerate(current_frame_json.get('detected classes')):
                 if detected_class == 'person': 
                     x, y, w, h = current_frame_json.get("bounding boxes")[index]
                     detections.append([x, y, w, h])
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+                    
+            # 2. Object Tracking
+            def object_tracking(detections):
+                tracker = EuclideanDistanceTracker()
+            
+                box_ids = tracker.update(detections)
+                print("box_ids", box_ids)
+                for box_id in box_ids:
+                    x, y, w, h, id = box_id
+                    cv2.putText(frame, "ID: "+ str(id), (x, y - 15), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 0, 255), 2)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+            object_tracking(detections)
             
     finally:
         video_capture.release()
@@ -125,6 +136,6 @@ def main(video_path: str, json_path: str, title: str) -> NoReturn:
 
 
 if __name__ == "__main__":
-    VIDEO_PATH = "resources/video_1.mp4"
-    JSON_PATH = "resources/video_1_detections.json"
+    VIDEO_PATH = "resources/video_2.mp4"
+    JSON_PATH = "resources/video_2_detections.json"
     main(VIDEO_PATH, JSON_PATH, "My Video")
