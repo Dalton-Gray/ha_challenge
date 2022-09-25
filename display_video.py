@@ -2,6 +2,7 @@ from math import floor
 from typing import NoReturn
 
 import cv2
+import json
 
 
 def open_video(path: str) -> cv2.VideoCapture:
@@ -54,7 +55,23 @@ def is_window_open(title: str) -> bool:
     return cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) >= 1
 
 
-def main(video_path: str, title: str) -> NoReturn:
+def open_json_file(path:str) -> dict:
+    """Returns the data contained in a JSON file
+    
+    Args:
+        path: an str containing the file path
+        
+    Returns:
+        A dictionary containing the data from the json file specified in the path argument    
+    """
+    with open(path) as json_file:
+        json_data = json.load(json_file)
+        json_data = json_data
+
+    return json_data
+
+
+def main(video_path: str, json_path: str, title: str) -> NoReturn:
     """Displays a video at half size until it is complete or the 'q' key is pressed.
 
     Args:
@@ -65,6 +82,7 @@ def main(video_path: str, title: str) -> NoReturn:
     video_capture = open_video(video_path)
     width, height = get_frame_dimensions(video_capture)
     wait_time = get_frame_display_time(video_capture)
+    json_data = open_json_file(json_path)
 
     try:
         # read the first frame
@@ -74,7 +92,9 @@ def main(video_path: str, title: str) -> NoReturn:
         cv2.namedWindow(title, cv2.WINDOW_AUTOSIZE)
 
         # run whilst there are frames and the window is still open
+        current_frame = 0 # counter to keep track of which frame we're in
         while success and is_window_open(title):
+            current_frame += 1
             # shrink it
             smaller_image = cv2.resize(frame, (floor(width // 2), floor(height // 2)))
 
@@ -87,6 +107,17 @@ def main(video_path: str, title: str) -> NoReturn:
 
             # read the next frame
             success, frame = video_capture.read()
+            
+            current_frame_json = json_data.get(str(current_frame))
+            # iterates through the list of bounding boxes for the current frame & draw a bounding box for each
+            
+            detections = [] # change name to pedestrians
+            # for bounding_box in current_frame_json.get("bounding boxes"):
+            for index, detected_class in enumerate(current_frame_json.get('detected classes')):
+                if detected_class == 'person': 
+                    x, y, w, h = current_frame_json.get("bounding boxes")[index]
+                    detections.append([x, y, w, h])
+            
     finally:
         video_capture.release()
         cv2.destroyAllWindows()
@@ -94,4 +125,5 @@ def main(video_path: str, title: str) -> NoReturn:
 
 if __name__ == "__main__":
     VIDEO_PATH = "resources/video_1.mp4"
-    main(VIDEO_PATH, "My Video")
+    JSON_PATH = "resources/video_2_detections.json"
+    main(VIDEO_PATH, JSON_PATH, "My Video")
